@@ -1,0 +1,41 @@
+services:
+  mysql_db:
+    image: mysql:8.0
+    container_name: event_ops_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword123
+      MYSQL_DATABASE: event_ops_db
+      MYSQL_USER: event_admin
+      MYSQL_PASSWORD: eventpassword123
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - event_mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --log-bin-trust-function-creators=1
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-prootpassword123"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  streamlit_dashboard:
+    build: .
+    container_name: event_ops_streamlit
+    restart: unless-stopped
+    ports:
+      - "8502:8501"
+    environment:
+      DB_HOST: mysql_db
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: rootpassword123
+      DB_NAME: event_ops_db
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+
+volumes:
+  event_mysql_data:

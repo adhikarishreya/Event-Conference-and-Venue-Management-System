@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventOps | Conference & Venue Management DBMS</title>
+  <style>
+    :root {
+      --bg:#0f172a; --surface:#1e293b; --surface2:#263348; --border:#334155;
+      --text:#f1f5f9; --muted:#94a3b8; --accent:#6366f1; --accent2:#4f46e5;
+      --green:#10b981; --amber:#f59e0b; --red:#ef4444; --sky:#38bdf8;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+    aside { width:264px; background:#0b1220; border-right:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:14px; position:sticky; top:0; height:100vh; flex-shrink:0; }
+    .brand { display:flex; align-items:center; gap:10px; padding:4px 6px; }
+    .brand-icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#38bdf8); display:grid; place-items:center; font-size:19px; }
+    .brand h1 { font-size:15.5px; font-weight:700; }
+    .brand small { color:var(--muted); font-size:11px; display:block; }
+    .team-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.5; }
+    .team-card strong { color:var(--sky); }
+    nav { display:flex; flex-direction:column; gap:4px; flex:1; }
+    nav button { background:transparent; border:1px solid transparent; color:var(--muted); text-align:left; padding:10px 12px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:8px; }
+    nav button:hover { background:var(--surface); color:var(--text); }
+    nav button.active { background:rgba(99,102,241,.18); color:#c7d2fe; border-color:rgba(99,102,241,.4); }
+    .sidebar-footer { border-top:1px solid var(--border); padding-top:12px; display:flex; flex-direction:column; gap:8px; }
+    main { flex:1; padding:24px 28px; overflow-x:hidden; max-width:1400px; }
+    .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:20px; flex-wrap:wrap; }
+    .topbar h2 { font-size:21px; font-weight:700; }
+    .topbar p { color:var(--muted); font-size:13px; margin-top:4px; }
+    .pill { background:rgba(16,185,129,.14); color:#6ee7b7; border:1px solid rgba(16,185,129,.35); padding:5px 11px; border-radius:999px; font-size:12px; font-weight:500; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:18px; }
+    .kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:15px 17px; }
+    .kpi .label { color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; }
+    .kpi .value { font-size:25px; font-weight:700; margin-top:5px; }
+    .kpi .sub { color:var(--sky); font-size:12px; margin-top:4px; }
+    .grid-2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:16px; margin-bottom:16px; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:17px 19px; margin-bottom:16px; }
+    .card-header { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+    .card h3 { font-size:15px; font-weight:600; }
+    .hint { color:var(--muted); font-size:12.5px; margin-bottom:12px; line-height:1.5; }
+    .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:11px; align-items:end; }
+    label { display:block; font-size:11.5px; color:var(--muted); margin-bottom:4px; font-weight:500; }
+    input, select { width:100%; background:#0f172a; border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:8px; font-size:13px; outline:none; }
+    input:focus, select:focus { border-color:var(--accent); }
+    .btn { background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+    .btn:hover { background:var(--accent2); }
+    .btn-secondary { background:var(--surface2); border:1px solid var(--border); color:var(--text); }
+    .btn-danger { background:rgba(239,68,68,.18); border:1px solid rgba(239,68,68,.5); color:#fca5a5; }
+    .btn-green { background:#059669; }
+    .btn-amber { background:#d97706; }
+    .btn-sm { padding:5px 10px; font-size:12px; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12.8px; }
+    th, td { padding:9px 11px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+    th { color:var(--muted); font-size:11px; text-transform:uppercase; background:rgba(15,23,42,.5); }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+    .b-green { background:rgba(16,185,129,.16); color:#6ee7b7; }
+    .b-amber { background:rgba(245,158,11,.18); color:#fcd34d; }
+    .b-red { background:rgba(239,68,68,.18); color:#fca5a5; }
+    .b-sky { background:rgba(56,189,248,.16); color:#7dd3fc; }
+    .b-purple { background:rgba(168,85,247,.18); color:#d8b4fe; }
+    #toast { position:fixed; bottom:20px; right:20px; max-width:440px; padding:12px 15px; border-radius:10px; font-size:13px; font-weight:500; box-shadow:0 12px 28px rgba(0,0,0,.45); display:none; z-index:999; line-height:1.4; }
+    #toast.ok { background:#064e3b; border:1px solid #10b981; color:#ecfdf5; }
+    #toast.err { background:#7f1d1d; border:1px solid #ef4444; color:#fef2f2; }
+    .chart-box { width:100%; overflow-x:auto; }
+    .legend { display:flex; gap:14px; font-size:12px; color:var(--muted); margin-top:8px; flex-wrap:wrap; }
+    .legend span { display:inline-flex; align-items:center; gap:6px; }
+    .dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+    .tab-pane { display:none; }
+    .tab-pane.active { display:block; }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(2,6,23,.78); display:none; place-items:center; z-index:1000; padding:20px; }
+    .modal-backdrop.open { display:grid; }
+    .cert-card { background:#fff; color:#0f172a; max-width:660px; width:100%; border-radius:14px; padding:34px; border:8px double #4f46e5; text-align:center; }
+    .cert-card h4 { color:#4f46e5; letter-spacing:2px; text-transform:uppercase; font-size:12.5px; }
+    .cert-card h2 { font-size:26px; margin:10px 0 6px; }
+    .cert-card .recipient { font-size:24px; font-weight:700; color:#1e1b4b; margin:12px 0; border-bottom:2px solid #e2e8f0; display:inline-block; padding-bottom:5px; }
+    .cert-meta { display:flex; justify-content:space-between; margin-top:24px; padding-top:14px; border-top:1px solid #e2e8f0; font-size:12px; color:#475569; text-align:left; }
+    .modal-actions { margin-top:16px; display:flex; justify-content:center; gap:10px; }
+    @media print { body * { visibility:hidden; } #certModal, #certModal * { visibility:visible; } #certModal { position:fixed; inset:0; background:#fff; } .modal-actions { display:none !important; } }
+    @media (max-width:860px) { body { flex-direction:column; } aside { width:100%; height:auto; position:static; } }
+  </style>
+</head>
+<body>
+  <aside>
+    <div class="brand">
+      <div class="brand-icon">🎟️</div>
+      <div><h1>EventOps DBMS</h1><small>Conference & Venue Suite</small></div>
+    </div>
+    <div class="team-card"><strong>Shreya Adhikari</strong><br />Roll No: <code>TCA2573041</code><br />13 Core Tables • ACID Locks</div>
+    <nav id="nav">
+      <button class="active" data-tab="overview">📊 Event Board & P&L</button>
+      <button data-tab="concurrency">⚡ Seat & Waitlist Lab</button>
+      <button data-tab="sessions">🏛️ Sessions & Conflict Guard</button>
+      <button data-tab="payments">💳 Payments & Refunds</button>
+      <button data-tab="checkin">🎫 Check-In & Certificates</button>
+      <button data-tab="sponsors">🤝 Sponsors, Venues & Tiers</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary btn-sm" onclick="refreshAll()">🔄 Refresh Data</button>
+      <button class="btn btn-danger btn-sm" onclick="resetDatabase()">♻️ Reset Demo DB</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h2>Event, Conference & Venue Management System</h2>
+        <p>Connected to all 13 relational tables, room/speaker overlap triggers, analytical views & ACID seat locking.</p>
+      </div>
+      <div class="pill" id="engineBadge">● Connecting...</div>
+    </div>
+
+    <section id="tab-overview" class="tab-pane active">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>Event Capacity vs. Confirmed & Waitlisted</h3></div>
+          <div class="chart-box" id="chartCapacity"></div>
+          <div class="legend">
+            <span><i class="dot" style="background:#6366f1"></i>Confirmed</span>
+            <span><i class="dot" style="background:#10b981"></i>Remaining</span>
+            <span><i class="dot" style="background:#f59e0b"></i>Waitlisted</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Revenue vs. Expenses (INR)</h3></div>
+          <div class="chart-box" id="chartFinancial"></div>
+          <div class="legend">
+            <span><i class="dot" style="background:#38bdf8"></i>Ticket Revenue</span>
+            <span><i class="dot" style="background:#10b981"></i>Sponsor Revenue</span>
+            <span><i class="dot" style="background:#ef4444"></i>Total Expenses</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Event Financial, Capacity & Participation Report (<code>vw_event_financial_and_capacity</code>)</h3></div>
+        <div class="table-wrap"><table id="tblEvents"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>➕ Create New Event</h3></div>
+        <form id="formEvent" class="form-grid" onsubmit="submitEvent(event)">
+          <div><label>Event Code</label><input name="event_code" placeholder="SUM-DB-26" required /></div>
+          <div><label>Event Name</label><input name="event_name" placeholder="National DBMS Symposium 2026" required /></div>
+          <div><label>Event Type</label><select name="event_type"><option>Conference</option><option>Workshop</option><option>Summit</option><option>Hackathon</option></select></div>
+          <div><label>Venue</label><select name="venue_id" id="evVenueSelect"></select></div>
+          <div><label>Start Date</label><input type="date" name="start_date" value="2026-12-20" required /></div>
+          <div><label>End Date</label><input type="date" name="end_date" value="2026-12-21" required /></div>
+          <div><label>Total Capacity</label><input type="number" name="total_capacity" min="1" value="50" required /></div>
+          <div><label>Base Expense (₹)</label><input type="number" name="base_expense_inr" min="0" value="60000" required /></div>
+          <div><button class="btn" type="submit">Create Event</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="tab-concurrency" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <h3>⚡ Advanced Challenge: Simultaneous Final-Seat Registration Simulator</h3>
+          <button class="btn btn-amber" onclick="runConcurrencySim()">🚀 Fire 6 Simultaneous Threads on CONF-AI-26</button>
+        </div>
+        <p class="hint">Spawns 6 synchronized threads (5 new attendees + 1 intentional duplicate) competing at the exact same millisecond for the remaining seat(s) in <code>CONF-AI-26</code>. Pessimistic locking guarantees zero overselling, blocks duplicates, and queues overflow into the waitlist.</p>
+        <div id="simOutput"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>🔒 Manual Atomic Attendee Registration (<code>sp_register_attendee_atomic</code>)</h3></div>
+        <p class="hint">In seed data, <code>CONF-AI-26</code> has <strong>4/5 seats filled</strong>. Registering a 5th attendee confirms them; a 6th automatically enters Waitlist #1; re-registering an existing attendee triggers Duplicate Block.</p>
+        <form id="formRegister" class="form-grid" onsubmit="submitRegistration(event)">
+          <div><label>Event</label><select name="event_id" id="regEventSelect" onchange="syncTicketTypesForEvent()"></select></div>
+          <div><label>Attendee</label><select name="attendee_id" id="regAttendeeSelect"></select></div>
+          <div><label>Ticket Category</label><select name="ticket_type_id" id="regTicketSelect"></select></div>
+          <div><label>Payment Method</label><select name="payment_method"><option>UPI</option><option>Credit_Card</option><option>Debit_Card</option><option>Net_Banking</option><option>Corporate_Invoice</option></select></div>
+          <div><button class="btn btn-green" type="submit">🔒 Register (ACID Locked)</button></div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>👤 Quick Add New Attendee</h3></div>
+        <form id="formAttendee" class="form-grid" onsubmit="submitAttendee(event)">
+          <div><label>Full Name</label><input name="full_name" placeholder="Siddharth Rao" required /></div>
+          <div><label>Email</label><input type="email" name="email" placeholder="siddharth@org.in" required /></div>
+          <div><label>Phone</label><input name="phone" placeholder="9811223344" required /></div>
+          <div><label>Organization</label><input name="organization" placeholder="TechLabs" required /></div>
+          <div><label>Designation</label><input name="designation" placeholder="Engineer" required /></div>
+          <div><label>City</label><input name="city" placeholder="New Delhi" required /></div>
+          <div><button class="btn" type="submit">Add Attendee</button></div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Live Event Capacity Counters</h3></div>
+        <div class="table-wrap"><table id="tblCapSummary"></table></div>
+      </div>
+    </section>
+
+    <section id="tab-sessions" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <h3>🛡️ Schedule New Session (Room & Speaker Overlap Triggers)</h3>
+          <button class="btn btn-danger btn-sm" type="button" onclick="prefillConflictDemo()">🧪 Prefill Room Conflict Test</button>
+        </div>
+        <p class="hint">Triggers block: (1) Maintenance rooms, (2) Session capacity &gt; Room max capacity, (3) Room time overlap with <strong>15-minute turnover buffer</strong>, and (4) Speaker double-booking.</p>
+        <form id="formSession" class="form-grid" onsubmit="submitSession(event)">
+          <div><label>Event</label><select name="event_id" id="sessEventSelect"></select></div>
+          <div><label>Room</label><select name="room_id" id="sessRoomSelect"></select></div>
+          <div><label>Speaker</label><select name="speaker_id" id="sessSpeakerSelect"></select></div>
+          <div><label>Session Code</label><input name="session_code" id="sCode" value="SESS-104" required /></div>
+          <div><label>Session Title</label><input name="session_title" id="sTitle" value="Database Concurrency Deep Dive" required /></div>
+          <div><label>Session Type</label><select name="session_type"><option>Technical_Talk</option><option>Keynote</option><option>Workshop</option><option>Panel</option></select></div>
+          <div><label>Capacity</label><input type="number" name="session_capacity" id="sCap" min="1" value="50" required /></div>
+          <div><label>Start Time (YYYY-MM-DD HH:MM:SS)</label><input name="start_time" id="sStart" value="2026-12-10 16:00:00" required /></div>
+          <div><label>End Time (YYYY-MM-DD HH:MM:SS)</label><input name="end_time" id="sEnd" value="2026-12-10 17:00:00" required /></div>
+          <div><button class="btn" type="submit">Assign Room & Speaker</button></div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>🏛️ Conference Session Schedule (<code>vw_session_schedule_board</code>)</h3></div>
+        <div class="table-wrap"><table id="tblSessions"></table></div>
+      </div>
+    </section>
+
+    <section id="tab-payments" class="tab-pane">
+      <div class="card">
+        <div class="card-header"><h3>📋 Registrations — Cancel, Refund & Auto-Promote Waitlist</h3></div>
+        <p class="hint">Cancelling a <strong>Confirmed</strong> registration voids the ticket, records a refund in <code>REFUND</code>, and automatically promotes the #1 <strong>Waitlisted</strong> attendee with a new ticket and payment.</p>
+        <div class="table-wrap"><table id="tblRegistrations"></table></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-header"><h3>💳 Payment Ledger (<code>PAYMENT</code>)</h3></div><div class="table-wrap"><table id="tblPayments"></table></div></div>
+        <div class="card"><div class="card-header"><h3>↩️ Refund Ledger (<code>REFUND</code>)</h3></div><div class="table-wrap"><table id="tblRefunds"></table></div></div>
+      </div>
+    </section>
+
+    <section id="tab-checkin" class="tab-pane">
+      <div class="card">
+        <div class="card-header"><h3>✅ Record Attendee Check-In & Issue Certificate</h3></div>
+        <form id="formCheckin" class="form-grid" onsubmit="submitCheckin(event)">
+          <div><label>Confirmed Registration</label><select name="registration_id" id="chkRegSelect"></select></div>
+          <div><label>Session</label><select name="session_id" id="chkSessSelect"></select></div>
+          <div><label>Check-In Method</label><select name="method"><option>QR_Scan</option><option>Desk_Manual</option></select></div>
+          <div><button class="btn btn-green" type="submit">Check In & Issue Certificate</button></div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>🎓 Attendance Certificates (<code>vw_attendance_certificates</code>)</h3></div>
+        <div class="table-wrap"><table id="tblCerts"></table></div>
+      </div>
+    </section>
+
+    <section id="tab-sponsors" class="tab-pane">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>🤝 Add Event Sponsor</h3></div>
+          <form id="formSponsor" class="form-grid" onsubmit="submitSponsor(event)">
+            <div><label>Event</label><select name="event_id" id="spEventSelect"></select></div>
+            <div><label>Sponsor Name</label><input name="sponsor_name" placeholder="NextGen Cloud" required /></div>
+            <div><label>Tier</label><select name="tier"><option>Title</option><option>Platinum</option><option>Gold</option><option>Silver</option></select></div>
+            <div><label>Contribution (₹)</label><input type="number" name="contribution_inr" value="100000" min="0" required /></div>
+            <div><label>Contact Person</label><input name="contact_person" placeholder="M. Verma" required /></div>
+            <div><button class="btn" type="submit">Add Sponsor</button></div>
+          </form>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>🎟️ Add Ticket Category</h3></div>
+          <form id="formTicketType" class="form-grid" onsubmit="submitTicketType(event)">
+            <div><label>Event</label><select name="event_id" id="ttEventSelect"></select></div>
+            <div><label>Category Name</label><input name="category_name" placeholder="Student Pass" required /></div>
+            <div><label>Price (₹)</label><input type="number" name="price_inr" value="999" min="0" required /></div>
+            <div><label>Allocated Seats</label><input type="number" name="allocated_seats" value="10" min="1" required /></div>
+            <div><button class="btn" type="submit">Add Category</button></div>
+          </form>
+        </div>
+      </div>
+      <div class="card"><div class="card-header"><h3>🤝 Event Sponsors (<code>SPONSOR</code>)</h3></div><div class="table-wrap"><table id="tblSponsors"></table></div></div>
+      <div class="card"><div class="card-header"><h3>🎟️ Ticket Categories (<code>TICKET_TYPE</code>)</h3></div><div class="table-wrap"><table id="tblTicketTypes"></table></div></div>
+      <div class="card"><div class="card-header"><h3>🏢 Venues & Rooms (<code>VENUE</code> & <code>ROOM</code>)</h3></div><div class="table-wrap"><table id="tblRooms"></table></div></div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="certModal" onclick="if(event.target===this) closeCert()">
+    <div class="cert-card">
+      <h4>Certificate of Participation</h4>
+      <h2 id="certEvent">Event Name</h2>
+      <p style="color:#475569;font-size:14px;">This certifies that</p>
+      <div class="recipient" id="certName">Attendee Name</div>
+      <p style="color:#334155;font-size:14px;line-height:1.6;">from <strong id="certOrg">Org</strong><br />actively participated in the session<br /><strong id="certSession">Session</strong></p>
+      <div class="cert-meta">
+        <div><strong>Certificate ID:</strong> <span id="certCode"></span><br /><strong>Check-In:</strong> <span id="certTime"></span></div>
+        <div style="text-align:right;"><strong>EventOps DBMS</strong><br />Shreya Adhikari (TCA2573041)</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="window.print()">🖨️ Print / Save PDF</button>
+        <button class="btn btn-secondary" onclick="closeCert()">Close</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast"></div>
+
+  <script>
+    let STATE = null;
+    const fmtINR = (n) => "₹" + Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+
+    function toast(msg, ok = true) {
+      const el = document.getElementById("toast");
+      el.textContent = msg; el.className = ok ? "ok" : "err"; el.style.display = "block";
+      clearTimeout(window._t); window._t = setTimeout(() => { el.style.display = "none"; }, 5500);
+    }
+    function badge(st) {
+      const m = { Confirmed:"b-green", Checked_In:"b-sky", Paid:"b-green", Active:"b-green", Received:"b-green", Scheduled:"b-sky", Processed:"b-purple", Used:"b-sky", Waitlisted:"b-amber", Pending:"b-amber", Pledged:"b-amber", Cancelled:"b-red", Voided:"b-red", Refunded:"b-red", Blocked:"b-red", Maintenance:"b-red" };
+      return `<span class="badge ${m[st] || 'b-sky'}">${esc(st)}</span>`;
+    }
+    document.querySelectorAll("#nav button").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll("#nav button").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    }));
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    function barSVG(id, items, lKey, series) {
+      const el = document.getElementById(id);
+      if (!items.length) { el.innerHTML = "<p class='hint'>No data</p>"; return; }
+      const maxV = Math.max(1, ...items.flatMap(it => series.map(s => Number(it[s.key] || 0))));
+      const W = Math.max(350, items.length * 145 + 50), H = 200, pB = 32, pT = 22, cH = H - pB - pT, bW = 24, g = 8;
+      let b = "";
+      items.forEach((it, i) => {
+        const gx = 42 + i * 145;
+        series.forEach((s, si) => {
+          const v = Number(it[s.key] || 0), h = Math.max(2, (v / maxV) * cH), x = gx + si * (bW + g), y = pT + (cH - h);
+          b += `<rect x="${x}" y="${y}" width="${bW}" height="${h}" rx="4" fill="${s.color}"><title>${esc(it[lKey])} - ${s.name}: ${v}</title></rect>`;
+          b += `<text x="${x + bW/2}" y="${y - 5}" text-anchor="middle" fill="#cbd5e1" font-size="10">${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}</text>`;
+        });
+        b += `<text x="${gx + (series.length*(bW+g))/2 - 4}" y="${H - 10}" text-anchor="middle" fill="#94a3b8" font-size="11.5" font-weight="600">${esc(it[lKey])}</text>`;
+      });
+      el.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><line x1="32" y1="${pT+cH}" x2="${W-10}" y2="${pT+cH}" stroke="#334155"/>${b}</svg>`;
+    }
+
+    function renderAll() {
+      const d = STATE;
+      document.getElementById("engineBadge").textContent = "● " + d.engine;
+      const tConf = d.events.reduce((a, e) => a + Number(e.confirmed_count), 0);
+      const tWait = d.events.reduce((a, e) => a + Number(e.waitlist_count), 0);
+      const tRev = d.events.reduce((a, e) => a + Number(e.total_revenue_inr), 0);
+      const tExp = d.events.reduce((a, e) => a + Number(e.total_expense_inr), 0);
+      const net = tRev - tExp;
+      document.getElementById("kpiGrid").innerHTML = `
+        <div class="kpi"><div class="label">Active Events</div><div class="value">${d.events.length}</div><div class="sub">${d.sessions.length} scheduled sessions</div></div>
+        <div class="kpi"><div class="label">Confirmed Seats</div><div class="value">${tConf}</div><div class="sub">Waitlisted: ${tWait} • Checked-In: ${d.certificates.length}</div></div>
+        <div class="kpi"><div class="label">Total Revenue</div><div class="value">${fmtINR(tRev)}</div><div class="sub">Tickets + Sponsorships</div></div>
+        <div class="kpi"><div class="label">Net Profit / Loss</div><div class="value" style="color:${net>=0?'#6ee7b7':'#fca5a5'}">${fmtINR(net)}</div><div class="sub">Expenses: ${fmtINR(tExp)}</div></div>`;
+
+      barSVG("chartCapacity", d.events, "event_code", [
+        { key:"confirmed_count", name:"Confirmed", color:"#6366f1" },
+        { key:"remaining_seats", name:"Remaining", color:"#10b981" },
+        { key:"waitlist_count", name:"Waitlisted", color:"#f59e0b" }
+      ]);
+      barSVG("chartFinancial", d.events, "event_code", [
+        { key:"ticket_revenue_inr", name:"Ticket Rev", color:"#38bdf8" },
+        { key:"sponsor_revenue_inr", name:"Sponsor Rev", color:"#10b981" },
+        { key:"total_expense_inr", name:"Expenses", color:"#ef4444" }
+      ]);
+
+      document.getElementById("tblEvents").innerHTML = `<thead><tr><th>Code</th><th>Event Name</th><th>Venue</th><th>Dates</th><th>Capacity</th><th>Waitlist</th><th>Occupancy</th><th>Check-In %</th><th>Ticket Rev</th><th>Sponsor Rev</th><th>Expenses</th><th>Net P&L</th></tr></thead><tbody>` +
+        d.events.map(e => `<tr><td><strong>${esc(e.event_code)}</strong></td><td>${esc(e.event_name)}</td><td>${esc(e.venue_name)}</td><td>${esc(e.start_date)}</td><td>${e.confirmed_count}/${e.total_capacity}</td><td>${e.waitlist_count}</td><td>${e.occupancy_pct}%</td><td>${e.participation_rate_pct}%</td><td>${fmtINR(e.ticket_revenue_inr)}</td><td>${fmtINR(e.sponsor_revenue_inr)}</td><td>${fmtINR(e.total_expense_inr)}</td><td style="font-weight:600;color:${e.net_profit_inr>=0?'#6ee7b7':'#fca5a5'}">${fmtINR(e.net_profit_inr)}</td></tr>`).join("") + `</tbody>`;
+
+      document.getElementById("tblCapSummary").innerHTML = `<thead><tr><th>Code</th><th>Event Name</th><th>Confirmed</th><th>Capacity</th><th>Remaining</th><th>Waitlisted</th></tr></thead><tbody>` +
+        d.events.map(e => `<tr><td><strong>${esc(e.event_code)}</strong></td><td>${esc(e.event_name)}</td><td>${e.confirmed_count}</td><td>${e.total_capacity}</td><td>${e.remaining_seats===0?'<span class="badge b-red">FULL</span>':`<span class="badge b-green">${e.remaining_seats} left</span>`}</td><td>${e.waitlist_count}</td></tr>`).join("") + `</tbody>`;
+
+      document.getElementById("tblSessions").innerHTML = `<thead><tr><th>Code</th><th>Event</th><th>Title</th><th>Type</th><th>Room</th><th>Speaker</th><th>Start</th><th>End</th><th>Cap</th><th>Attended</th></tr></thead><tbody>` +
+        d.sessions.map(s => `<tr><td><strong>${esc(s.session_code)}</strong></td><td>${esc(s.event_code)}</td><td>${esc(s.session_title)}</td><td>${esc(s.session_type)}</td><td>${esc(s.room_code)} (${esc(s.room_name)})</td><td>${esc(s.speaker_name)}</td><td>${esc(s.start_time)}</td><td>${esc(s.end_time)}</td><td>${s.session_capacity}</td><td>${s.attended_count}</td></tr>`).join("") + `</tbody>`;
+
+      document.getElementById("tblRegistrations").innerHTML = `<thead><tr><th>Reg Code</th><th>Event</th><th>Attendee</th><th>Tier</th><th>Status</th><th>Waitlist #</th><th>Ticket</th><th>Payment</th><th>Action</th></tr></thead><tbody>` +
+        d.registrations.map(r => `<tr><td><strong>${esc(r.reg_code)}</strong></td><td>${esc(r.event_code)}</td><td>${esc(r.full_name)}</td><td>${esc(r.category_name)}</td><td>${badge(r.registration_status)}</td><td>${r.waitlist_position??'—'}</td><td>${r.ticket_number?esc(r.ticket_number)+' '+badge(r.ticket_status):'—'}</td><td>${r.payment_status?badge(r.payment_status):'—'}</td><td>${r.registration_status!=='Cancelled'?`<button class="btn btn-danger btn-sm" onclick="cancelReg(${r.registration_id},'${esc(r.reg_code)}')">Cancel & Refund</button>`:'—'}</td></tr>`).join("") + `</tbody>`;
+
+      document.getElementById("tblPayments").innerHTML = `<thead><tr><th>Txn Ref</th><th>Reg</th><th>Attendee</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead><tbody>` +
+        d.payments.map(p => `<tr><td><code>${esc(p.transaction_ref)}</code></td><td>${esc(p.reg_code)}</td><td>${esc(p.attendee_name)}</td><td>${fmtINR(p.amount_inr)}</td><td>${esc(p.payment_method)}</td><td>${badge(p.payment_status)}</td></tr>`).join("") + `</tbody>`;
+
+      document.getElementById("tblRefunds").innerHTML = `<thead><tr><th>Refund Ref</th><th>Reg</th><th>Attendee</th><th>Amount</th><th>Reason</th><th>Status</th></tr></thead><tbody>` +
+        (d.refunds.length ? d.refunds.map(rf => `<tr><td><code>${esc(rf.refund_ref)}</code></td><td>${esc(rf.reg_code)}</td><td>${esc(rf.attendee_name)}</td><td>${fmtINR(rf.refund_amount_inr)}</td><td>${esc(rf.refund_reason)}</td><td>${badge(rf.refund_status)}</td></tr>`).join("") : `<tr><td colspan="6" style="color:var(--muted)">No refunds yet. Cancel a confirmed registration to test auto-refund & waitlist promotion.</td></tr>`) + `</tbody>`;
+
+      document.getElementById("tblCerts").innerHTML = `<thead><tr><th>Certificate Code</th><th>Attendee</th><th>Organization</th><th>Event</th><th>Session</th><th>Method</th><th>Time</th><th>Certificate</th></tr></thead><tbody>` +
+        d.certificates.map((c, i) => `<tr><td><code>${esc(c.certificate_code)}</code></td><td><strong>${esc(c.attendee_name)}</strong></td><td>${esc(c.organization)}</td><td>${esc(c.event_name)}</td><td>${esc(c.session_title)}</td><td>${esc(c.checkin_method)}</td><td>${esc(c.checkin_time)}</td><td><button class="btn btn-secondary btn-sm" onclick="openCert(${i})">🎓 View / Print</button></td></tr>`).join("") + `</tbody>`;
+
+      document.getElementById("tblSponsors").innerHTML = `<thead><tr><th>Event</th><th>Sponsor</th><th>Tier</th><th>Contribution</th><th>Contact</th><th>Status</th></tr></thead><tbody>` +
+        d.sponsors.map(s => `<tr><td>${esc(s.event_code)}</td><td><strong>${esc(s.sponsor_name)}</strong></td><td>${badge(s.tier)}</td><td>${fmtINR(s.contribution_inr)}</td><td>${esc(s.contact_person)}</td><td>${badge(s.sponsorship_status)}</td></tr>`).join("") + `</tbody>`;
+
+      document.getElementById("tblTicketTypes").innerHTML = `<thead><tr><th>Event</th><th>Category</th><th>Price</th><th>Sold / Allocated</th><th>Remaining</th></tr></thead><tbody>` +
+        d.ticket_types.map(t => `<tr><td>${esc(t.event_code)}</td><td><strong>${esc(t.category_name)}</strong></td><td>${fmtINR(t.price_inr)}</td><td>${t.sold_seats}/${t.allocated_seats}</td><td>${t.allocated_seats - t.sold_seats}</td></tr>`).join("") + `</tbody>`;
+
+      document.getElementById("tblRooms").innerHTML = `<thead><tr><th>Code</th><th>Room</th><th>Venue</th><th>City</th><th>Type</th><th>Max Cap</th><th>AV</th><th>Status</th></tr></thead><tbody>` +
+        d.rooms.map(r => `<tr><td><strong>${esc(r.room_code)}</strong></td><td>${esc(r.room_name)}</td><td>${esc(r.venue_name)}</td><td>${esc(r.city)}</td><td>${esc(r.room_type)}</td><td>${r.max_capacity}</td><td>${r.has_av_system?'✅':'—'}</td><td>${badge(r.room_status)}</td></tr>`).join("") + `</tbody>`;
+
+      const evOpts = d.events.map(e => `<option value="${e.event_id}">${esc(e.event_code)} — ${esc(e.event_name)}</option>`).join("");
+      ["regEventSelect","sessEventSelect","spEventSelect","ttEventSelect"].forEach(id => { const el = document.getElementById(id), prev = el.value; el.innerHTML = evOpts; if (prev) el.value = prev; });
+      document.getElementById("evVenueSelect").innerHTML = d.venues.map(v => `<option value="${v.venue_id}">${esc(v.venue_name)} (${esc(v.city)})</option>`).join("");
+      document.getElementById("regAttendeeSelect").innerHTML = d.attendees.map(a => `<option value="${a.attendee_id}">${esc(a.full_name)} (${esc(a.email)})</option>`).join("");
+      document.getElementById("sessRoomSelect").innerHTML = d.rooms.map(r => `<option value="${r.room_id}">${esc(r.room_code)} — ${esc(r.room_name)} (Cap ${r.max_capacity})</option>`).join("");
+      document.getElementById("sessSpeakerSelect").innerHTML = d.speakers.map(s => `<option value="${s.speaker_id}">${esc(s.full_name)}</option>`).join("");
+      const confRegs = d.registrations.filter(r => r.registration_status === "Confirmed" || r.registration_status === "Checked_In");
+      document.getElementById("chkRegSelect").innerHTML = confRegs.map(r => `<option value="${r.registration_id}">${esc(r.reg_code)} — ${esc(r.full_name)} (${esc(r.event_code)})</option>`).join("");
+      document.getElementById("chkSessSelect").innerHTML = d.sessions.map(s => `<option value="${s.session_id}">${esc(s.session_code)} — ${esc(s.session_title)} (${esc(s.event_code)})</option>`).join("");
+      syncTicketTypesForEvent();
+    }
+
+    function syncTicketTypesForEvent() {
+      if (!STATE) return;
+      const evId = Number(document.getElementById("regEventSelect").value);
+      const list = STATE.ticket_types.filter(t => t.event_id === evId);
+      document.getElementById("regTicketSelect").innerHTML = list.map(t => `<option value="${t.ticket_type_id}">${esc(t.category_name)} (${fmtINR(t.price_inr)} • ${t.allocated_seats - t.sold_seats} left)</option>`).join("");
+    }
+
+    async function refreshAll() { try { STATE = await api("/api/overview"); renderAll(); } catch (e) { toast(e.message, false); } }
+    async function submitForm(e, url, form) {
+      e.preventDefault();
+      try { const r = await api(url, { method:"POST", body:JSON.stringify(Object.fromEntries(new FormData(form).entries())) }); toast(r.message || "Saved!"); await refreshAll(); }
+      catch (err) { toast(err.message, false); }
+    }
+    const submitEvent = e => submitForm(e, "/api/events", e.target);
+    const submitRegistration = e => submitForm(e, "/api/register", e.target);
+    const submitAttendee = e => submitForm(e, "/api/attendees", e.target);
+    const submitSession = e => submitForm(e, "/api/sessions", e.target);
+    const submitCheckin = e => submitForm(e, "/api/checkin", e.target);
+    const submitSponsor = e => submitForm(e, "/api/sponsors", e.target);
+    const submitTicketType = e => submitForm(e, "/api/ticket-types", e.target);
+
+    async function cancelReg(id, code) {
+      const reason = prompt(`Cancellation reason for ${code}:`, "Attendee schedule conflict");
+      if (reason === null) return;
+      try { const r = await api("/api/cancel", { method:"POST", body:JSON.stringify({ registration_id:id, reason }) }); toast(r.message); await refreshAll(); }
+      catch (err) { toast(err.message, false); }
+    }
+    async function runConcurrencySim() {
+      const out = document.getElementById("simOutput");
+      out.innerHTML = `<p class="hint">⏳ Firing 6 synchronized threads against CONF-AI-26...</p>`;
+      try {
+        const res = await api("/api/concurrency-test", { method:"POST", body:JSON.stringify({ event_id:1, ticket_type_id:2, num_threads:6 }) });
+        const s = res.summary;
+        out.innerHTML = `<div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="badge b-green">Confirmed: ${s.confirmed}</span>
+          <span class="badge b-amber">Waitlisted: ${s.waitlisted}</span>
+          <span class="badge b-red">Duplicates Blocked: ${s.blocked_duplicates}</span>
+          <span class="badge ${s.capacity_integrity_passed?'b-green':'b-red'}">Capacity Guard: ${res.event.confirmed_count}/${res.event.total_capacity} (${s.capacity_integrity_passed?'PASS':'FAIL'})</span>
+        </div><div class="table-wrap"><table><thead><tr><th>Thread</th><th>Attendee</th><th>Outcome</th><th>Time</th><th>Response</th></tr></thead><tbody>` +
+          res.results.map(r => `<tr><td><strong>${esc(r.thread)}</strong></td><td>${esc(r.attendee)}</td><td>${badge(r.outcome)}</td><td>${r.elapsed_ms} ms</td><td>${esc(r.detail)}</td></tr>`).join("") + `</tbody></table></div>`;
+        toast("Concurrency test completed — zero capacity violations!"); await refreshAll();
+      } catch (err) { out.innerHTML = `<p style="color:#fca5a5">${esc(err.message)}</p>`; toast(err.message, false); }
+    }
+    function prefillConflictDemo() {
+      document.getElementById("sessEventSelect").value = "1"; document.getElementById("sessRoomSelect").value = "1";
+      document.getElementById("sessSpeakerSelect").value = "2"; document.getElementById("sCode").value = "SESS-CONFLICT";
+      document.getElementById("sTitle").value = "Overlapping Hall A Test"; document.getElementById("sCap").value = "50";
+      document.getElementById("sStart").value = "2026-12-10 10:30:00"; document.getElementById("sEnd").value = "2026-12-10 11:30:00";
+      toast("Prefilled an overlapping slot in Plenary Hall A — click 'Assign Room & Speaker' to test the trigger!");
+    }
+    function openCert(i) {
+      const c = STATE.certificates[i];
+      document.getElementById("certEvent").textContent = c.event_name; document.getElementById("certName").textContent = c.attendee_name;
+      document.getElementById("certOrg").textContent = c.organization; document.getElementById("certSession").textContent = c.session_title;
+      document.getElementById("certCode").textContent = c.certificate_code; document.getElementById("certTime").textContent = c.checkin_time;
+      document.getElementById("certModal").classList.add("open");
+    }
+    function closeCert() { document.getElementById("certModal").classList.remove("open"); }
+    async function resetDatabase() {
+      if (!confirm("Reset database back to clean initial seed data?")) return;
+      try { await api("/api/reset", { method:"POST", body:"{}" }); document.getElementById("simOutput").innerHTML = ""; toast("Database reset to initial seed data."); await refreshAll(); }
+      catch (err) { toast(err.message, false); }
+    }
+    refreshAll();
+  </script>
+</body>
+</html>
